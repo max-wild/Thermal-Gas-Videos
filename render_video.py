@@ -2,7 +2,7 @@ import bpy
 from random import seed, randint, uniform  # , getrandbits
 from math import sin, cos, copysign
 # from numpy import log as ln
-from os.path import join
+import os
 from time import sleep
 from datetime import datetime
 import argparse
@@ -11,9 +11,6 @@ import sys
 
 seed()
 
-scenes = 8  # Measures how many scenes are randomly set and rendered
-fp_scene = 4  # Frames-per-scene, how many pictures are rendered per scene
-
 domain = bpy.context.scene.objects["Smoke Domain"]
 emitter = bpy.context.scene.objects["Emitter"]
 init_velocity = emitter.modifiers["Fluid"].flow_settings.velocity_coord
@@ -21,9 +18,6 @@ light = bpy.context.scene.objects["Light"]
 cam = bpy.context.scene.objects["Camera"]
 turbulence = bpy.context.scene.objects["Turbulence"]
 wind = bpy.context.scene.objects["Wind"]
-
-output_dir = ''  # = '/Users/Max/Documents/Blender/Smokes/trials/render{}'
-folder_num = ''
 
 sign = lambda x: copysign(1, x)
 start_time = datetime.now()
@@ -60,14 +54,6 @@ def rand_color_val() -> float:
 
     # Put it through a weighted function
     return max(c/5, 54*c/70 - 6/35)
-
-    # return min(0.6, max(0, -0.3 + c))
-    # Put it through a weighted piecewise function
-    # if c >= 0.83:
-    #     return 0.6
-    # else:
-    #     c = -(ln(-0.6*c + 0.5) + 0.64) / 10
-    #     return round(c, 2)
 
 
 def rand_smoke_offset() -> float:
@@ -199,32 +185,34 @@ def bake():
 
     assert ('FINISHED' in bpy_baking)
 
-    # Increment and continue baking
-    # domain.modifiers["Fluid"].domain_settings.cache_frame_end += 40
-    # bpy_baking = bpy.ops.fluid.bake_all()
-    # assert ('FINISHED' in bpy_baking)
 
-
-def render_images(r_num, f=folder_num) -> int:
+def render_anim(r_num: int, make_images: bool, output_dir: str, digits: int) -> int:
     """
     Renders four frames of the animation, subdivided into 16-20 frames per image
 
     :param r_num: The number of the file attached to the rendered image
-    :param f: The number of the folder
+    :param make_images: If the video is rendered as an image slideshow or a single video
+    :param output_dir: What the output of the file should be
+    :param digits: How many digits are in the amount of image renders. Used solely for naming
+        rendered images
     :return: Returns the new number of the file attached to the rendered image
     """
 
-    frame = 0
+    # Set frame
+    bpy.context.scene.frame_set(20)
 
-    for i in range(fp_scene):
+    if make_images:
+        # Save images into a folder
+        output = os.path.join(output_dir, 'slideshow{}'.format(r_num), '/{0:0>{}}.png'.format(1, digits))
 
-        # Set frame
-        frame += randint(16, 20)
-        bpy.context.scene.frame_set(frame)
+        bpy.context.scene.render.filepath = output
+        bpy.ops.render.render(animation=True)
+        r_num += 1
 
-        # Save image
-        bpy.context.scene.render.filepath = join(output_dir, 'render{0:0>5}.png'.format(r_num))
-        bpy.ops.render.render(write_still=True)
+    else:
+        # Save video
+        bpy.context.scene.render.filepath = os.path.join(output_dir, 'video{}.mp4'.format(r_num))
+        bpy.ops.render.render(animation=True)
         r_num += 1
 
     return r_num
@@ -233,20 +221,21 @@ def render_images(r_num, f=folder_num) -> int:
 def init_values():
     parser = ArgumentParserForBlender()
 
-    parser.add_argument("-r", "--repeats", type=int, default=8, required=False,
-                        help="How many various smoke scenes to bake.")
-    parser.add_argument("-o", "--output", type=str, required=True,
-                        help="File location of the renders folder")
-    parser.add_argument("-n", "--number", type=str, default='', required=False,
-                        help="Number of the file folder")
+    parser.add_argument('-f', '--fps', type=int, default=30,
+                        help='How many frames per second the video should be')
+    parser.add_argument('-s', '--seconds', type=int, default=20,
+                        help='How many seconds of video should be rendered')
+    parser.add_argument('-v', '--video_count', type=int, default=1,
+                        help='How many different scenarios/videos should be rendered')
+    parser.add_argument('-r', '--render_image_slideshow', type=bool, default=False,
+                        help='Determine if the video be rendered as a slideshow of images or as a single video')
+
+    parser.add_argument('-o', '--output', type=str, required=True,
+                        help='File location of the renders folder')
+
     args = vars(parser.parse_args())
 
-    global output_dir
-    output_dir = args['output']
-    global folder_num
-    folder_num = args['number']
-    global scenes
-    scenes = args['repeats']
+    return args['fps'], args['seconds'], args['video_count'], args['render_image_slideshow'], args['output']
 
 
 def init_gpu():
@@ -291,16 +280,31 @@ def start_render():
     :return:
     """
 
-    init_values()
+    fps, vid_secs, vids_count, render_images, output = init_values()
 
-    assert (domain.modifiers["Fluid"].domain_settings.cache_frame_end >= fp_scene * 20)
-    render_num = 1
+    # Set up video requirements
+    delete_bake()
+    sleep(0.4)
+
+    frames = fps * vid_secs
+    bpy.context.scene.frame_start = 20
+    bpy.context.scene.frame_end = frames
+    domain.modifiers["Fluid"].domain_settings.cache_frame_end = frames  # Somke domain frame end
+    bpy.context.scene.render.fps = fps
+
+    if render_images:
+        bpy.context.scene.render.image_settings.file_format = 'PNG'
+    else:
+        bpy.context.scene.render.image_settings.file_format = 'FFMPEG'
+        bpy.context.scene.render.ffmpeg.format = 'MPEG4'
+
+    file_num = 1
 
     init_gpu()
     
-    print(f'\nStarting to render {scenes * fp_scene} gas images...')
+    print(f'\nStarting to render {vids_count} gas videos...')
 
-    for i in range(scenes):
+    for i in range(vids_count):
 
         # DELETE OLD BAKE
         delete_bake()        
@@ -318,9 +322,10 @@ def start_render():
         bake()
 
         # RENDER
-        render_num = render_images(render_num)
+        file_num = render_anim(file_num, render_images, output, digits=len(str(frames - 20)))
 
-    print(f'Finished producing {scenes * fp_scene} render(s), time {(datetime.now() - start_time).total_seconds()}\n')
+    print(f'Finished producing {vids_count} {"render" if vids_count == 1 else "renders"}, '
+          f'time {(datetime.now() - start_time).total_seconds()}\n')
 
 
 if __name__ == '__main__':
