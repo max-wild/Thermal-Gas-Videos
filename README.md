@@ -36,5 +36,8 @@ Each environment for the gas changes many different parameters to ensure that ev
 
 If Google Colab is used to run this project, ensure that the runtime is connected to a GPU with Edit->Notebook settings->Hardware accelerator->GPU 
 
+Also, the .png images are rendered with transparent backgrounds, compared to the .mp4 video where all transparency is rendered as black.
+
 Cheers!
+
 Max
