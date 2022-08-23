@@ -219,6 +219,17 @@ def render_anim(r_num: int, make_images: bool, output_dir: str, digits: int) -> 
     return r_num
 
 
+def str_to_bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def init_values():
     parser = ArgumentParserForBlender()
 
@@ -228,7 +239,7 @@ def init_values():
                         help='How many seconds of video should be rendered')
     parser.add_argument('-v', '--video_count', type=int, default=1,
                         help='How many different scenarios/videos should be rendered')
-    parser.add_argument('-r', '--render_image_slideshow', type=bool, default=False,
+    parser.add_argument('-r', '--render_image_slideshow', type=str_to_bool, default=False,
                         help='Determine if the video be rendered as a slideshow of images or as a single video')
 
     parser.add_argument('-o', '--output', type=str, required=True,
@@ -236,7 +247,8 @@ def init_values():
 
     args = vars(parser.parse_args())
 
-    return args['fps'], args['seconds'], args['video_count'], args['render_image_slideshow'], args['output']
+    return args['fps'], args['seconds'], args['video_count'], args['render_image_slideshow'].lower() == 'true', \
+           args['output']
 
 
 def init_gpu():
