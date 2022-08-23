@@ -203,8 +203,7 @@ def render_anim(r_num: int, make_images: bool, output_dir: str, digits: int) -> 
 
     if make_images:
         # Save images into a folder
-        output_end = 'slideshow{}'.format(r_num)
-        output_end += '/{0:0>{}}.png'.format(1, digits)
+        output_end = 'slideshow{}/'.format(r_num)
         output = os.path.join(output_dir, output_end)
 
         bpy.context.scene.render.filepath = output
@@ -288,11 +287,13 @@ def start_render():
     delete_bake()
     sleep(0.4)
 
-    frames = fps * vid_secs
+    frames = (fps * vid_secs) + 20  # Total frames of animation
     bpy.context.scene.frame_start = 20
     bpy.context.scene.frame_end = frames
-    domain.modifiers["Fluid"].domain_settings.cache_frame_end = frames  # Somke domain frame end
+    domain.modifiers["Fluid"].domain_settings.cache_frame_end = frames  # Smoke domain frame end
     bpy.context.scene.render.fps = fps
+
+    print(f'TEST: {render_images=}')
 
     if render_images:
         bpy.context.scene.render.image_settings.file_format = 'PNG'
