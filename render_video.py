@@ -247,8 +247,7 @@ def init_values():
 
     args = vars(parser.parse_args())
 
-    return args['fps'], args['seconds'], args['video_count'], args['render_image_slideshow'].lower() == 'true', \
-           args['output']
+    return args['fps'], args['seconds'], args['video_count'], args['render_image_slideshow'], args['output']
 
 
 def init_gpu():
@@ -305,8 +304,6 @@ def start_render():
     domain.modifiers["Fluid"].domain_settings.cache_frame_end = frames  # Smoke domain frame end
     bpy.context.scene.render.fps = fps
 
-    print(f'TEST: {render_images=}')
-
     if render_images:
         bpy.context.scene.render.image_settings.file_format = 'PNG'
     else:
@@ -331,7 +328,8 @@ def start_render():
         sleep(0.4)
 
         if i != 0:
-            print(f'\nCompleted render {i}, seconds: {(datetime.now() - start_time).total_seconds()}')
+            print(f'\nCompleted render {i}, seconds: '
+                  f'{round((datetime.now() - start_time).total_seconds(), 2)}')
 
         # BAKE
         bake()
@@ -342,7 +340,7 @@ def start_render():
         file_num = render_anim(file_num, render_images, output, digits=len(str(frames - 20)))
 
     print(f'Finished producing {vids_count} {"render" if vids_count == 1 else "renders"}, '
-          f'time {(datetime.now() - start_time).total_seconds()}\n')
+          f'time: {round((datetime.now() - start_time).total_seconds(), 2)} seconds\n')
 
 
 if __name__ == '__main__':
