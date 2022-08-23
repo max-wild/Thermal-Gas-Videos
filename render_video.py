@@ -203,7 +203,9 @@ def render_anim(r_num: int, make_images: bool, output_dir: str, digits: int) -> 
 
     if make_images:
         # Save images into a folder
-        output = os.path.join(output_dir, 'slideshow{}'.format(r_num), '/{0:0>{}}.png'.format(1, digits))
+        output_end = 'slideshow{}'.format(r_num)
+        output_end += '/{0:0>{}}.png'.format(1, digits)
+        output = os.path.join(output_dir, output_end)
 
         bpy.context.scene.render.filepath = output
         bpy.ops.render.render(animation=True)
@@ -320,6 +322,8 @@ def start_render():
 
         # BAKE
         bake()
+
+        print(f'\nStarting render for video {i + 1}, seconds: {(datetime.now() - start_time).total_seconds()}')
 
         # RENDER
         file_num = render_anim(file_num, render_images, output, digits=len(str(frames - 20)))
