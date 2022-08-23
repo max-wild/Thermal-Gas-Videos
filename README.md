@@ -1,7 +1,7 @@
 
 # Rendering Thermal Video of Gas
 
-This [**Python notebook**](https://github.com/max-wild/Thermal-Gas-Videos/raw/main/thermal_as_video.ipynb) built using Google Colab allows for very easy video generation of gas:
+This [**Python notebook**](https://github.com/max-wild/Thermal-Gas-Videos/blob/main/thermal_gas_videos.ipynb) built using Google Colab allows for very easy video generation of gas:
 
 <p float="left" align="middle" display="flex" align-items="center">
 <img src="https://github.com/max-wild/Thermal-Gas-Videos/raw/main/examples/example.gif" width="32%">
